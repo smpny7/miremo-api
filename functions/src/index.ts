@@ -5,6 +5,7 @@ import * as fs from "fs";
 if (!fs.existsSync("cache")) fs.mkdirSync("cache");
 
 import {pingAsync, pingOnlineAsync} from "./mc-ping";
+import {playerIconAsync, serverIconAsync} from "./icon";
 
 const app: express.Express = express();
 const router: express.Router = express.Router();
@@ -63,4 +64,48 @@ router.get("/status/online", (req: express.Request, res: express.Response) => {
         });
 });
 
+// -----------------------------------------------------------------------------
+
+
+// --- Get Server Icon ---------------------------------------------------------
+
+router.get("/icon/server", (req: express.Request, res: express.Response) => {
+    serverIconAsync(req.query.host as string, parseInt(req.query.port as string))
+        .then(result => {
+            res.writeHead(200, {
+                "Content-Type": "image/png; charset=utf-8",
+                "Content-Length": result.length,
+            });
+            res.end(result, "binary");
+        })
+        .catch(err => {
+            console.log("[Get Server Icon] " + err);
+            res.status(500).json({
+                success: false,
+                msg: err,
+            });
+        });
+});
+
+// -----------------------------------------------------------------------------
+
+
+// --- Get Player Icon ---------------------------------------------------------
+router.get("/icon/player", (req: express.Request, res: express.Response) => {
+    playerIconAsync(req.query.minecraft_id as string)
+        .then((img) => {
+            res.writeHead(200, {
+                "Content-Type": "image/png; charset=utf-8",
+                "Content-Length": img.length,
+            });
+            res.end(img, "binary");
+        })
+        .catch(err => {
+            console.log("[Get Player Icon] " + err);
+            res.status(500).json({
+                success: false,
+                msg: err,
+            });
+        });
+});
 // -----------------------------------------------------------------------------
