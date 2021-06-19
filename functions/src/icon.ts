@@ -1,5 +1,4 @@
 import axios from "axios";
-import * as fs from "fs";
 
 const mcPing = require("mc-ping-updated");
 const sharp = require("sharp");
@@ -12,7 +11,7 @@ const sharp = require("sharp");
  */
 export function serverIconAsync(host: string, port: number): Promise<any> {
   return new Promise((resolve, reject) => {
-    mcPing(host, port, function(err: any, res: any) {
+    mcPing(host, port, (err: any, res: any) => {
       if (err) reject(err);
       // eslint-disable-next-line max-len
       else resolve(Buffer.from(res.favicon.replace(/^data:image\/png;base64,/, ""), "base64"));
@@ -32,27 +31,16 @@ export function playerIconAsync(minecraftId: string): Promise<any> {
     axios.get(getUUID).then((res) => {
       if (typeof res.data.id !== "undefined") {
         const getUserData = "https://sessionserver.mojang.com/session/minecraft/profile/" + res.data.id;
-        axios.get(getUserData).then((res) => {
-          // eslint-disable-next-line max-len
-          const decode: string = Buffer.from(res.data.properties[0].value, "base64").toString();
-          const getIconData = JSON.parse(decode);
-          const getIconUrl = getIconData.textures.SKIN.url;
-
-          if (!fs.existsSync("./cache/" + minecraftId + ".png")) {
-            Promise.all([trimming(minecraftId, getIconUrl)]).then(function() {
+        axios.get(getUserData)
+            .then(async (res) => {
               // eslint-disable-next-line max-len
-              const image = fs.readFileSync("./cache/" + minecraftId + ".png", "binary");
+              const decode: string = Buffer.from(res.data.properties[0].value, "base64").toString();
+              const getIconData = JSON.parse(decode);
+              const getIconUrl = getIconData.textures.SKIN.url;
+              const image = await trimming(minecraftId, getIconUrl);
               resolve(image);
-            });
-          } else {
-            // eslint-disable-next-line max-len
-            const image = fs.readFileSync("./cache/" + minecraftId + ".png", "binary");
-            resolve(image);
-          }
-        });
-      } else {
-        // eslint-disable-next-line prefer-promise-reject-errors
-        reject();
+            })
+            .catch((err) => reject(err));
       }
     });
   });
@@ -69,8 +57,7 @@ async function trimming(minecraftId: string, getIconUrl: string) {
     responseType: "arraybuffer",
   })).data as Buffer;
 
-  await sharp(input)
+  return await sharp(input)
       .extract({width: 8, height: 8, left: 8, top: 8})
-      .toFile("./cache/" + minecraftId + ".png");
-  return;
+      .toBuffer();
 }
