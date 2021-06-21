@@ -41,8 +41,8 @@ export function playerIconAsync(minecraftId: string): Promise<any> {
               resolve(image);
             })
             .catch((err) => reject(err));
-      }
-    });
+      } else reject(new Error(`Minecraft ID ${minecraftId} does not exist.`));
+    }).catch((err) => reject(err));
   });
 }
 
